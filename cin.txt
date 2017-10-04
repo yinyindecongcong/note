@@ -1,0 +1,3 @@
+cin.clear() 重置good位使可输入
+cin.ignore(a, ch) 清空输入缓冲区a个字符或直到遇到ch
+cin.sync() 清空输入缓冲区全部内容
