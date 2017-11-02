@@ -1,0 +1,37 @@
+template <entry>
+struct binary_node{
+  //constructor
+  binary_node();
+  binary_node(const entry & key);
+  
+  //data members
+  entry data;
+  binary_node<entry> * lchild;
+  binary_node<entry> * rchild;
+  
+};
+template <entry>
+class binary_tree{
+public:
+  //constructor
+  binary_tree();
+  binary_tree(const binary_tree<entry> & original);
+  //orerator =
+  binary_tree & operator = (const binary_tree<entry> & original);
+  //destructor
+  ~binary_tree();
+  
+  //function
+  int size()const;
+  bool empty()const;
+  int height()const;
+  void insert(const entry& key);
+  
+  //traverse
+  void preorder(void (*visit)(entry&));
+  void inorder(void (*visit)(entry&));
+  void postorder(void (*visit)(entry&));
+  
+private:
+  binary_node<entry> * root;
+};
