@@ -23,12 +23,7 @@ private:
   vector<string> court; //12个球场
   vector<team> Vecteam; //32只球队
 };
-//定义主办方类
-class host{
-public:
-private:
 
-};
 //定义球员
 enum POSITION{GK, DF, MF, FW}; //分别为守门员，后卫，中锋，前锋
 struct sportsman{
@@ -36,11 +31,16 @@ struct sportsman{
   int num; //球衣号码
   POSITION pos;
   int goal; //进球数
+  sportsman(){}
+  sportsman(string n, int nu, POSOTION p, int g = 0):name(n), num(nu), pos(p), goal(g){}
 };
 //定义球队
 class team{
 public:
   team();
+  team(string n, int r):nation(n), rank(r), WIN(0), LOST(0), EVEN(0), GF(0), GA(0), GD(0), PTs(0){}
+  bool addmember(string n, int nu, POSOTION p, int g = 0);
+  bool get_at_de(); //计算attack和defend数值
   void versus(team & A, team & B); //比赛
 private:
   string nation;
