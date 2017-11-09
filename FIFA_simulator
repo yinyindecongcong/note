@@ -3,9 +3,25 @@ class simulator{
 public:
   void start();
 
-  read32();
-private:
+  bool read32(); //从一个文件读入32只球队信息
+  bool show32(); //显示32强并存入team32.txt(包括地区，队名，排名)
+  bool draw32(); //分组抽签并显示，并将信息存入finalDraw.txt
   
+  bool schedule16(); //安排小组赛赛程并显示，并存入schedule16.txt
+  bool simulate16(); //模拟小组赛进程，更新队伍积分等情况
+  bool result16();   //按格式显示比赛情况并存入Result16.txt
+  
+  //根据参数判断对应比赛
+  bool show(int); //显示16/8/4/2强并存入team16/8/4/2/1.txt(包括地区，队名，排名)
+  bool schedule(int); //安排比赛赛程并显示，并存入schedule8/4/2/1.txt
+  bool simulate(int); //模拟比赛进程，更新队伍积分等情况
+  bool result(int);   //按格式显示比赛情况并存入Result8/4/2/1.txt
+  
+  bool showall(); //显示最终结果，包括前十名队伍及射手榜，存入finalStastics.txt
+  
+private:
+  vector<string> court; //12个球场
+  vector<team> Vecteam; //32只球队
 };
 //定义主办方类
 class host{
@@ -28,6 +44,7 @@ public:
   void versus(team & A, team & B); //比赛
 private:
   string nation;
+  int rank;
   int WIN, LOST, EVEN, GF, GA, GD, PTs;
   vector<sportsman> members;
   int attack, defend;
