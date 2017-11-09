@@ -1,0 +1,26 @@
+//模拟器
+class simulator{
+public:
+  void start();
+
+  read32();
+private:
+  
+};
+//定义主办方类
+class host{
+public:
+private:
+
+};
+//定义球员
+enum POSITION{GK, DF, MF, FW}; //分别为守门员，后卫，中锋，前锋
+struct sportsman{
+  string name;
+  POSITION pos;
+  int goal; //进球数
+};
+//定义球队
+class team{
+  vector<>
+};
