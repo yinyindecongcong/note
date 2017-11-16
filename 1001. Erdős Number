@@ -1,3 +1,12 @@
+Input
+
+Assume that Paul Erdős is numbered 0, other authors are numbered by positive integers between 1 to 100. 
+The first line is the number of test cases. Each test case start with the number m of authors in a line, then m pairs of authors are followed. 
+
+Output 
+
+For each test case, each author's Erdős number is printed out, if it is finite, in a separate line in the form "author number: Erdős number" in the order of increasing author number, and finally a dotted line "---" is printed out in a separate line.
+
 //邻接矩阵的广度遍历
 #include <iostream>
 #include <vector>
