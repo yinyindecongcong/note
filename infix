@@ -1,0 +1,81 @@
+#include <iostream>
+#include <map>
+#include <stack>
+#include <vector>
+#include <string>
+#include <stdlib.h>
+using namespace std;
+string intopos(string e){
+    string s = "";
+    stack<char> operate;
+    for (int i = 0; i < e.size(); i++)
+        if (e[i] == ' ') continue;
+        else if ((e[i] <= 'z' && e[i] >= 'a') || (e[i] <= 'Z' && e[i] >= 'A')) s += e[i];
+        else if (e[i] <= '9' && e[i] >= '0') {
+            do{
+                s += e[i];
+                i++;
+            }while((e[i] <= '9' && e[i] >= '0') || e[i] == '.');
+            i--;
+            s += ' ';
+        }
+        else if (e[i] == '(') operate.push('(');
+        else if (e[i] == ')'){
+            while (operate.top() != '('){
+                s += operate.top();
+                operate.pop();
+            }
+            operate.pop();
+        }
+        else if (e[i] == '*' || e[i] == '/') operate.push(e[i]);
+        else if (e[i] == '+' || e[i] == '-'){
+            while(!operate.empty() && (operate.top() == '*'|| operate.top() == '/' || operate.top() == '+' || operate.top() == '-')){
+                s += operate.top();
+                operate.pop();
+            }
+            operate.push(e[i]);
+        }
+    while(!operate.empty()){
+        s += operate.top();
+        operate.pop();
+    }
+    return s;
+}
+double calcu(double b, double a, char c){
+if (c == '+') return b + a;
+if (c == '-') return b - a;
+if (c == '*') return b * a;
+if (c == '/') return 1.0 * b / a;
+}
+double eval1(string e, map <char,double> f){
+    stack <double> operand;
+    for (unsigned int i = 0; i < e.size(); i++)
+    if (e[i] == ' ') continue;
+    else if (e[i] <= '9' && e[i] >= '0'){
+        double fl = atof(e.substr(i).c_str());
+        operand.push(fl);
+        unsigned int j = i + 1;
+        while (e[j] == '.' || (e[j] <= '9' && e[j] >= '0')) j++; //get the final position of f
+        i = j - 1;
+    }
+    else if (e[i] <= 'z' && e[i] >= 'a') operand.push(f[e[i]]);
+    else if (e[i] == '+' || e[i] == '-' || e[i] == '*' || e[i] == '/'){
+        double a = operand.top();
+        operand.pop();
+        double b = operand.top();
+        operand.pop();
+        operand.push(calcu(b, a, e[i]));
+    }
+    return operand.top();
+}
+double eval(string e, map<char,double> f){
+    string s = intopos(e);
+    return eval1(s, f);
+}
+int main()
+{
+    map<char, double> f;
+    cout << eval1("2 3+", f) << endl;
+    cout << intopos("(2.3 + 3) - 1 * 4") << endl;
+    cout << eval("(2.3 + 3) - 1 * 4",f) << endl;
+}
