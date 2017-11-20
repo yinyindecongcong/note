@@ -1,0 +1,763 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <time.h>
+#include <iomanip>
+#include <algorithm>
+using namespace std;
+string host_nation = "俄罗斯";
+template<class T>
+void random_arrange(vector<T> &V, int s, int n){ //打乱函数
+  srand((unsigned)time(0));
+  for (int i = n - s; i > s; i--){
+    int a = s + rand() % (i - s + 1);
+    T temp = V[a];
+    V[a] = V[i];
+    V[i] = temp;
+  }
+}
+template <class T>
+bool find(vector<T> a, T b){  //查找，若存在返回1
+  for (auto x : a)
+    if (x == b) return 1;
+  return 0;
+}
+enum POSITION{GK, DF, MF, FW}; //球员位置，分别为守门员，后卫，中锋，前锋
+//定义球员
+struct sportsman{
+  string name;
+  string comefrom;
+  int num; //球衣号码
+  POSITION pos;
+  int goal; //进球数
+  sportsman(){}
+  sportsman(string n, string fr, int nu, POSITION p, int g = 0):name(n), comefrom(fr), num(nu), pos(p), goal(g){}
+};
+
+//定义球队
+class team{
+public:
+  team(){rank = 0;}
+  team(string n, int r, int c, int num, int s):nation(n), rank(r), continent(c), race_num(num),scores(s), WIN(0), LOST(0), EVEN(0), GF(0), GA(0),GD(0),PTs(0){}
+  //get函数
+  string getnation(){ return nation; }
+  int get_continent(){ return continent; }
+  int get_rank(){ return rank; }
+  int get_WIN(){ return WIN; }
+  bool get_at_de(); //计算attack和defend数值
+  int get_PTs(){ return PTs = WIN * 3 + EVEN; }
+  vector<sportsman> get_members(){ return members; }
+  //操作
+  bool addmember(string n, string fr, int nu, POSITION p, int g = 0);
+  int versus(team & B, int mode = 0); //比赛
+  void show_grade(ostream & out);
+  int gtb(team & B); //根据积分、GF、GA比较，大于返回1，小于返回0，等于返回2
+  bool attackonce(team & B, int &a, int & w); //进行一次攻击
+  bool win(team & B){ return find(winwho, B.nation); } //是否赢过B
+  void showMembers(ostream & out);
+private:
+  string nation;
+  int rank;
+  int continent; //0--亚洲， 1--中北美， 2--南美洲， 3--非洲， 4--欧洲
+  int race_num; //已打比赛场次,即32强前比赛场数
+  int scores; //总进球数，初始化为32强前进球数，计算进球率，用于模拟比赛
+  int WIN, LOST, EVEN, GF, GA, GD, PTs;
+  vector<sportsman> members;
+  vector<string> winwho;
+  double competent; //根据进球率及排名计算队伍能力值，用于模拟比赛
+};
+
+//模拟器
+typedef vector <team> Vteam;
+struct match{ string stdium, day; int A, B;}; //球场 第几天 队伍A 队伍B
+bool comp_date(match & a, match & b){ return a.day < b.day; }
+class simulator{
+public:
+  simulator(){ 
+    Vecteam.resize(32); matches.resize(48); court.resize(12); //vecMan.resize(32 * 11);
+    ifstream fin("court.txt");
+    for (int i = 0; i < 12; i++) fin >> court[i];
+  }
+  void start(){
+    read32(); 
+    show32();
+    draw32();
+    schedule16();
+    simulate16();
+    result16();
+    get_16();
+    show(16);
+    /*schedule8();
+    simulate(8);
+    result(8);
+    show(8);
+    schedule4();
+    simulate(4);
+    result(4);
+    show(4);
+    schedule2();
+    simulate(2);
+    result(2);
+    show(2);
+    schedule1();
+    simulatefinals();
+    resultfinals();
+    get_final_ten();
+    sort_goal();*/
+  }
+  bool read32(); //从一个文件读入32只球队信息
+  bool show32(); //显示32强并存入team32.txt(包括地区，队名，排名)----use: aushow32()
+  bool draw32(); //分组抽签并显示结果及存入finalDraw.txt文件---use: show_first_stage() show_final_stage() draw_pot3()
+
+  bool schedule16();  //安排小组赛赛程并显示，并存入schedule16.txt---use:draw_court() showschedule16()
+  bool schedule8(); //安排16强赛程并显示，并存入schedule8.txt---use: showschedule()
+  bool schedule4(); //安排8强赛程并显示，并存入schedule4.txt---use: showschedule()
+  bool schedule2(); //同上，4强
+  bool schedule1(); //总决赛赛程
+
+  bool simulate16();  //模拟小组赛进程，更新队伍积分等情况
+  bool simulate(int n); //模拟八分之一（n=8）及四分之一（n=4）及半决赛（n=2）
+  void simulatefinals();  //模拟总决赛
+
+  bool result16();    //按格式显示比赛情况并存入Result16.txt---use: show_result16()
+  bool result(int n);   //按格式显示比赛情况并存入Result8/4/2.txt---use: show_result()
+  void resultfinals();    //显示总决赛结果---use: show_resultfinals()
+
+  bool get_16(); //确定16强---use: get_group_winner()
+  bool show(int n); //显示16/8/4/2强并存入team16/8/4/2.txt(包括地区，队名，排名)
+
+private:
+  //辅助函数
+  void show_first_stage(ostream & out); //显示抽签前分组情况
+  void show_final_stage(ostream & out); //显示抽签后分组情况
+  void showschedule16(ostream & out); 
+  void showschedule16BYdate(ostream & out); 
+  void showschedule(ostream & out, int n, int num = 2, int finalround = 0);//辅助函数，根据参数确定显示格式
+  void show_resultfinals(ostream & out);
+  void get_final_ten();//显示前十名队伍及辅助函数，存入finalStastics.txt
+  void show_final_ten(ostream & out);
+  void sort_goal();     //根据进球数排序并显示前20名
+  void show_goal_rank(ostream & out);
+  void aushow32(ostream & out); 
+  void aushow(ostream & out, int n = 16);
+  bool get_top8();
+  bool remove_top8();
+  bool find_remove(Vteam & V, string & s);
+  void init(Vteam & pot2, Vteam & pot3, Vteam & pot4);
+  void draw_pot3();
+  void draw_court();
+  void show_result16(ostream & out);
+  void show_result(ostream & out, int);
+  void get_group_winner(Vteam & Vecteam, int & s, int & n);//从s到n的四只队伍选出晋级两只队伍，并将编号存入s和n
+  void sortPts(int s, int n);
+private:
+  vector<string> court; //12个球场
+  vector<team> Vecteam; //32只球队,小组赛中0-3为A组，4-7为B组......
+  vector<Vteam> conteam; //各地区的球队
+  vector<string> top8; //第一档
+  Vteam pot1, pot2, pot3, pot4;
+
+  vector<match> matches;
+  void show_a_match(match & m, ostream & out){
+    out << "  " << Vecteam[m.A].getnation() << " vs " << Vecteam[m.B].getnation() << ", " << m.stdium << ", " << m.day << endl;
+  }
+  vector<sportsman> vecMan;
+};
+
+int main(){
+  simulator s;
+  s.start(); 
+}
+int team::gtb(team & B){
+    if (PTs > B.PTs) return 1;
+    else if (PTs < B.PTs) return 0;
+    if (GA > B.GA) return 1;
+    else if (GA < B.GA) return 0;
+    if (GF > B.GF) return 1;
+    else if (GF < B.GF) return 0;
+    if (win(B)) return 1;
+    if (B.win(*this)) return 0;
+    else return 2;
+}
+bool team::attackonce(team & B, int &a, int & w){
+    
+}
+int team::versus(team & B, int mode){ //mode = 0为小组赛制，mode = 1为淘汰赛制
+  competent = 1.0 * scores / race_num;
+  B.competent = 1.0 * B.scores / B.race_num;
+  if (continent != B.continent){
+    if (abs(rank - B.rank) >= 30) { 
+      competent = (B.rank > rank)? competent + 3: competent - 3; 
+      B.competent = (B.rank > rank)? B.competent - 3: competent + 3;
+    }
+    else {
+      competent += (B.rank - rank) * 0.1;
+      B.competent -= (B.rank - rank) * 0.1;
+    }
+  }
+  int a = 0, b = 0, c = 0, d = 0;
+  cout << "Group stage: " << endl;
+  cout << nation << " vs " << B.nation << endl;
+  showMembers(cout);
+  B.showMembers(cout);
+  cout << "Playing...." << endl;  
+  int times = 0;
+  int players = 0;
+  while (1){
+    int t = rand() % 15;
+    if((times += t + 5) > 90) break;
+    if (attackonce(B, a, players)) cout << nation << " did a goal, and it was #" << members[players].num << ", " << members[players].name << " did the goal.\nNow it is " << a << " : " << b << endl;
+    t = rand() % 15;
+    if((times += t + 5) > 90) break;
+    if (B.attackonce(*this, b, players)) cout << B.nation << " did a goal, and it was #" << B.members[players].num << ", " << B.members[players].name << " did the goal.\nNow it is " << a << " : " << b << endl;
+  }
+  c = a, d = b;
+  if (a == b && mode){
+    cout << "It is a draw, extra time..." << endl;
+    times = 90;
+    while (1){
+      int t = rand() % 15;
+      if((times += t + 5) > 120) break;
+      if (attackonce(B, a, players)) cout << nation << " did a goal, and it was #" << members[players].num << ", " << members[players].name << " did the goal.\nNow it is " << a << " : " << b << endl;
+      t = rand() % 15;
+      if((times += t + 5) > 120) break;
+      if (B.attackonce(*this, b, players)) cout << B.nation << " did a goal, and it was #" << B.members[players].num << ", " << B.members[players].name << " did the goal.\nNow it is " << a << " : " << b << endl;
+    }
+    c = a, d = b;
+    while(c == d){
+      cout << "It is a draw, penalty shootout..." << endl;
+      for (int i = 0; i < 5; i++){
+        if (attackonce(B, c, players)) cout << nation << " did a goal, and it was #" << members[players].num << ", " << members[players].name << " did the goal.\nNow it is " << c - a << " : " << d - b << " in the penalty shootout!" << endl;
+        if (B.attackonce(*this, d, players)) cout << B.nation << " did a goal, and it was #" << B.members[players].num << ", " << B.members[players].name << " did the goal.\nNow it is " << c- a << " : " << d - b << " in the penalty shootout!" << endl;
+      }
+    }
+  }
+  GF += c, GA += d, GD = GF - GA;
+  B.GF += d, B.GA += c, B.GD = B.GF - B.GA;
+  if (a > b) { cout << nation << " wins with " << a << " : " << b << endl << endl; WIN++; B.LOST++; winwho.push_back(B.nation); return 1; }
+  else if (a < b) { cout << B.nation << " wins with " << a << " : " << b << endl<< endl; LOST++; B.WIN++; B.winwho.push_back(nation); return 2; }
+  else if (!mode) { cout << "It is a draw with " << a << " : " << b << endl << endl; EVEN++; B.EVEN++; return 0; }
+  else {
+    if (c > d) { cout << nation << " wins with " << c - a << " : " << d - b << " in the penalty shootout!" << endl << endl; WIN++; B.LOST++; winwho.push_back(B.nation); return 1; }
+    LOST++; B.WIN++; B.winwho.push_back(nation);
+    cout << B.nation << " wins with " << c - a << " : " << d - b << " in the penalty shootout!" << endl << endl; return 2;
+  }
+}
+void team::show_grade(ostream & out){
+  out << setw(12) << left << nation << right << setw(3) << WIN << setw(3) << EVEN << setw(3) << LOST << setw(3) << GF << setw(3) << GA;
+  out << setw(3) << GD << setw(4) << (PTs = WIN * 3 + EVEN) << endl;
+}
+bool team::addmember(string n, string fr, int nu, POSITION p, int g){
+  sportsman s(n, fr, nu, p, g);
+  members.push_back(s);
+  return 1;
+}
+void team::showMembers(ostream & out){
+  cout << nation << endl;
+  for (auto a : members){
+    out << "  #" << a.num << ", " << a.name << ", ";
+    if (a.pos == GK) out << "GK" << endl;
+    else if (a.pos == DF) out << "DF" << endl;
+    else if (a.pos == MF) out << "MF" << endl;
+    else out << "FW" << endl;
+  }
+}
+
+void simulator::aushow32(ostream & out){
+  out << "AFC(5)" << endl;
+  for (auto a : conteam[0]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  out << "CONCACAF(3)" << endl;
+  for (auto a : conteam[1]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  out << "CONMEBOL(5)" << endl;
+  for (auto a : conteam[2]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  out << "CAF(5)" << endl;
+  for (auto a : conteam[3]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  out << "UEFA(14)" << endl;
+  for (auto a : conteam[4]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  out << endl;
+}
+void simulator::aushow(ostream & out, int n){
+  if (n == 2) { out << " Qualified for finals: " << endl; n = 4; }
+  else out << " Qualified for round of " << n << ": " << endl;
+  for (int i = 0; i < n; i++) out << Vecteam[i].getnation() << endl;
+  out << endl;
+}
+bool simulator::show32(){
+  aushow32(cout);
+  ofstream fout("team32.txt");
+  aushow32(fout);
+  fout.close();
+  return 1;
+}
+bool simulator::show(int n){
+  stringstream ss;
+  ss << n;
+  string s = "team" + ss.str() + ".txt";
+  aushow(cout, n);
+  ofstream fout(s);
+  aushow(fout, n);
+  fout.close();
+  return 1;
+}
+void simulator::show_first_stage(ostream & out){
+  out << "First stage: " << endl;
+  out << "pot1" << endl;
+  for (unsigned int i = 0; i < 8; i++) out << "  " << pot1[i].getnation() << endl; 
+  out << "pot2" << endl;
+  for (unsigned int i = 0; i < 8; i++) out << "  " << pot2[i].getnation() << endl; 
+  out << "pot3" << endl;
+  for (unsigned int i = 0; i < 8; i++) out << "  " << pot3[i].getnation() << endl;
+  out << "pot4" << endl;
+  for (unsigned int i = 0; i < 8; i++) out << "  " << pot4[i].getnation() << endl;
+  out << endl;
+}
+void simulator::show_final_stage(ostream & out){
+  out << "The Final Draw: " << endl;
+  for (int i = 0; i < 8; i++){
+    out << "group " << char('A' + i) << endl;
+    for (int j = 4 * i; j < 4 * i + 4; j++)  out << "  " << Vecteam[j].getnation() << endl;
+  }
+  out << endl;
+}
+void simulator::showschedule16(ostream & out){
+  out << "Matches by squads" << endl;
+  for (int i = 0; i < 8; i++){
+    out << "group " << (char)('A' + i) << endl;
+    show_a_match(matches[6 * i], out);
+    show_a_match(matches[6 * i + 1], out);
+    show_a_match(matches[6 * i + 2], out);
+    show_a_match(matches[6 * i + 3], out);
+    show_a_match(matches[6 * i + 4], out);
+    show_a_match(matches[6 * i + 5], out);
+  }
+  out << endl;
+}
+void simulator::showschedule16BYdate(ostream & out){
+  sort(matches.begin(), matches.end(),comp_date);
+  out << "Matches by date " << endl;
+  out << matches[0].day << endl;
+  out << "  " << Vecteam[matches[0].A].getnation() << " vs " << Vecteam[matches[0].B].getnation() << ", " << matches[0].stdium << endl;
+  for (int i = 1; i < 48; i++){
+    if(matches[i].day != matches[i - 1].day) out << matches[i].day << endl;
+    out << "  " << Vecteam[matches[i].A].getnation() << " vs " << Vecteam[matches[i].B].getnation() << ", " << matches[i].stdium << endl;
+  }
+  out << endl;
+}
+bool simulator::read32(){
+  ifstream fin("32.txt");
+  if (!fin) { cerr << "error" << endl; return 0; }
+  string continent = "", nation = "", name = "";
+  int num = 0, rank = 0, nu = 0, connum = 0, race_num = 0, scores = 0;
+  int p = 0;
+  while(fin >> continent && fin >> num && fin >> connum){ //读入洲名、球队数量、洲对应号码
+    Vteam V;
+    while(num--){
+      fin >> nation >> rank >> race_num >> scores;
+      team T(nation, rank, connum, race_num, scores);
+      for (int i = 0; i < 11; i++){
+        fin >> name >> nu >> p;
+        T.addmember(name, nation, nu, (POSITION)p);
+      }
+      V.push_back(T);
+    }
+    conteam.push_back(V);
+  }
+  fin.close();
+  return 1;
+}
+bool simulator::find_remove(Vteam & V, string & s){
+  for (unsigned int i = 0; i < V.size(); i++)
+    if (V[i].getnation() == s) { pot1.push_back(V[i]); V.erase(V.begin() + i); return 1; }
+  return 0;
+}
+bool simulator::get_top8(){
+  ifstream fin("top8.txt");
+  if (!fin) { cerr << "" << endl; return 0; }
+  string s = "";
+  while (fin >> s) top8.push_back(s);
+  fin.close();
+  return 1;
+}
+bool simulator::remove_top8(){
+  for (unsigned i = 0; i < conteam.size(); i++)
+    for (auto b : top8)
+      find_remove(conteam[i], b);
+  for (unsigned i = 0; i < 8; i++)
+    if (pot1[i].getnation() == host_nation){
+      team T = pot1[i];
+      pot1[i] = pot1[0];
+      pot1[0] = T;
+      break;
+    }
+  return 1;
+}
+void simulator::init(Vteam & pot2, Vteam & pot3, Vteam & pot4){
+  for (auto a : conteam[0]) pot2.push_back(a);
+  for (auto a : conteam[1]) pot2.push_back(a);
+  for (auto a : conteam[2]) pot3.push_back(a);
+  for (auto a : conteam[3]) pot3.push_back(a);
+  for (auto a : conteam[4]) pot4.push_back(a);
+}
+void simulator::draw_pot3(){
+  srand((unsigned)time(0));
+  for (auto p : pot3)
+    if (p.get_continent() == 2){ //若为南美洲球队
+      while (1){
+        int a = rand() % 8;
+        if (Vecteam[4 * a + 2].get_rank() == 0 && pot1[a].get_continent() != 2){
+          Vecteam[4 * a + 2] = p; break;
+        }
+      }
+    }
+  for (auto p : pot3)
+    if (p.get_continent() != 2){ //若不为南美洲球队
+      while (1){
+        int a = rand() % 8;
+        if (Vecteam[4 * a + 2].get_rank() == 0){
+          Vecteam[4 * a + 2] = p; break;
+        }
+      }
+    }
+}
+bool simulator::draw32(){
+  ofstream fout("finalDraw.txt");
+  get_top8();
+  remove_top8();
+  init(pot2, pot3, pot4);
+  show_first_stage(cout);
+  show_first_stage(fout);
+  random_arrange(pot1, 1, 7); //除俄罗斯外随机重排
+  random_arrange(pot2, 0, 7); //亚洲与中北美随机重排
+  random_arrange(pot4, 0, 7); //欧洲随机重排
+  for (unsigned int i = 0; i < 8; i++) {
+    Vecteam[4 * i] = pot1[i]; //pot1随机分组进入8个组中
+    Vecteam[4 * i + 1] = pot2[i]; //pot2随机分组进入8个组中
+    Vecteam[4 * i + 3] = pot4[i]; //pot4随机分组进入8个组中
+  }
+  draw_pot3();  //避免同组出现2只南美洲球队
+  show_final_stage(cout);
+  show_final_stage(fout);
+  fout.close();
+  return 1;
+}
+bool conflict(vector<vector<int> > use, vector<int> a, int m){
+  int j = 0;
+  while (j++ < 12) { 
+    if (find(use[(m % 16) / 2], a[m % 12])) return 1;
+    m++; 
+  }
+  return 0; 
+}
+void simulator::draw_court(){
+  vector<vector<int> > use(8);
+  int m = 0;
+  vector<int> a;
+  for (int j = 0; j < 12; j++) a.push_back(j);
+  for (int i = 0; i < 4; i++)
+    while(1) {
+      random_arrange(a, 0, 11);
+      if (!conflict(use, a, m)){
+        int j = 0;
+        while (j++ < 12) { matches[m].stdium = a[m % 12]; use[(m % 16) / 2].push_back(a[m % 12]); m++; } 
+        break;
+      }
+    }
+}
+bool simulator::schedule16(){
+  for (int i = 1; i < 8; i++) random_arrange(Vecteam, 4 * i, 4 * i + 3); //打乱小组内部
+  ifstream fin("match_arrange16.txt");
+  if (!fin){ cerr << "error" << endl; return 0; }
+  for (int i = 0; i < 48; i++)  fin >> matches[i].day >> matches[i].A >> matches[i].B >> matches[i].stdium;
+  fin.close();
+  ofstream fout("schedule16.txt");
+  showschedule16(cout);
+  showschedule16(fout);
+  showschedule16BYdate(cout);
+  showschedule16BYdate(fout);
+  fout.close();
+  return 1;
+}
+bool simulator::simulate16(){
+  for(auto a: matches) Vecteam[a.A].versus(Vecteam[a.B]);
+  return 1;
+}
+void simulator::show_result16(ostream & out){
+  for (int i = 0; i < 8; i++){
+    out << "Final result for group " << (char)('A' + i) << endl;
+    out << setw(12) << left << "Team" << right << setw(3) << "W" << setw(3) << "D" << setw(3) << "L" << setw(3) << "GF";
+    out << setw(3) << "GA" << setw(3) << "GD" << setw(4) << "PTs" << endl;
+    for (int j = 4 * i; j < 4 * i + 4; j++) Vecteam[j].show_grade(out);
+    out << endl;
+  }
+}
+bool simulator::result16(){
+  ofstream fout("Result16.txt");
+  show_result16(cout);
+  show_result16(fout);
+  fout.close();
+  return 1;
+}
+bool simulator::simulate(int n){
+  int win8[8];
+  for (int i = 0; i < n; i++)
+    win8[i] = (Vecteam[matches[i].A].versus(Vecteam[matches[i].B], 1) == 1)? matches[i].A: matches[i].B;
+  for (int i = 0; i < n; i++){
+    team t = Vecteam[i]; Vecteam[i] = Vecteam[win8[i]]; Vecteam[win8[i]] = t;
+  }
+  return 1;
+}
+bool simulator::result(int n){
+  stringstream ss;
+  ss << n;
+  string s = "Result" + ss.str() + ".txt";
+  ofstream fout(s);
+  show_result(cout, n);
+  show_result(fout, n);
+  fout.close();
+  return 1;
+}
+void simulator::show_result(ostream & out, int n){
+  out << "Final result for round " << 2 * n << "(the first " << n <<" teams win in round " << 2 * n << "): " << endl;
+  out << setw(12) << left << "Team" << right << setw(3) << "W" << setw(3) << "D" << setw(3) << "L" << setw(3) << "GF";
+  out << setw(3) << "GA" << setw(3) << "GD" << setw(4) << "PTs" << endl;
+  for (int i = 0; i < 2 * n; i++) Vecteam[i].show_grade(out);
+  out << endl;
+}
+void simulator::get_group_winner(Vteam & Vecteam, int & s, int & n){
+  for (int i = s; i < n; i++){
+    for (int j = n; j > i; j--)
+      if (Vecteam[j].gtb(Vecteam[j - 1])){
+        team temp = Vecteam[j];
+        Vecteam[j] = Vecteam[j - 1];
+        Vecteam[j - 1] = temp;
+      } //now 1 >= 2 >= 3 >= 4
+  }
+  int a = s;
+  if (Vecteam[a].gtb(Vecteam[a + 1]) == 1){
+    if (Vecteam[a + 1].gtb(Vecteam[a + 2]) == 1){ n = a + 1; return; }
+    if (Vecteam[a + 2].gtb(Vecteam[a + 3]) == 1){
+      //judge(b,c)
+      if (Vecteam[a + 1].win(Vecteam[a + 2])) n = a + 1;
+      else if (Vecteam[a + 2].win(Vecteam[a + 1])) n = a + 2;
+      else n = a + 1 + rand() % 2;
+    }
+    else {//judge(b,c,d)
+      int b = Vecteam[a + 1].get_WIN() - Vecteam[a + 1].win(Vecteam[a]);
+      int c = Vecteam[a + 2].get_WIN() - Vecteam[a + 2].win(Vecteam[a]);
+      int d = Vecteam[a + 3].get_WIN() - Vecteam[a + 3].win(Vecteam[a]);
+      if (b == c && c == d) n = a + 1 + rand() % 3;
+      else if (b > c && b > d) n = a + 1;
+      else if (c > b && c > d) n = a + 2;
+      else if (d > c && d > b) n = a + 3;
+      else if (b == c)  n = Vecteam[a + 1].win(Vecteam[a + 2])? a + 1: a + 2; 
+      else if (b == d)  n = Vecteam[a + 1].win(Vecteam[a + 3])? a + 1: a + 3;
+      else if (c == d)  n = Vecteam[a + 2].win(Vecteam[a + 2])? a + 2: a + 3;
+    }
+  }
+  else{
+    if (Vecteam[a + 1].gtb(Vecteam[a + 2]) == 1){
+      //judge(a,b)
+      if (Vecteam[a].win(Vecteam[a + 1])) { s = a; n = a + 1; }
+      else { s = a + rand() % 2; n = (s == a)? a + 1: a; }
+      return;
+    }
+    if (Vecteam[a + 2].gtb(Vecteam[a + 3]) == 1){
+      //judge(a, b, c)
+      int b = Vecteam[a].get_WIN() - Vecteam[a].win(Vecteam[a + 3]);
+      int c = Vecteam[a + 1].get_WIN() - Vecteam[a + 1].win(Vecteam[a + 3]);
+      int d = Vecteam[a + 2].get_WIN() - Vecteam[a + 2].win(Vecteam[a + 3]);
+      if (b == c && c == d) { s = a + rand() % 3; do{ n = a + rand() % 3; }while(n == s); }
+      else if (b > c && b > d) {s = a; n = Vecteam[a + 1].win(Vecteam[a + 2])? a + 1: a + 2;}
+      else if (c > b && c > d) {s = a + 1; n = Vecteam[a].win(Vecteam[a + 2])? a: a + 2;}
+      else if (d > c && d > b) {s = a + 2; n = Vecteam[a + 1].win(Vecteam[a])? a + 1: a;}
+      else if (b == c) Vecteam[a].win(Vecteam[a + 1])? (s = a, n = a + 1): (s = a + 1, n = a); 
+      else if (c == d) Vecteam[a + 1].win(Vecteam[a + 2])? (s = a + 1, n = a + 2): (s = a + 2, n = a + 1); 
+      else if (b == d) Vecteam[a].win(Vecteam[a + 2])? (s = a, n = a + 2): (s = a + 2, n = a); 
+    }
+    else {
+      //judge(a, b, c, d)
+      int x = Vecteam[a].get_WIN(), b = Vecteam[a + 1].get_WIN(), c = Vecteam[a + 2].get_WIN(), d = Vecteam[a + 3].get_WIN();
+      if (x == b && b == c && c == d){s = a + rand() % 4; do{n = a + rand() % 4; }while (n == s); }
+    }
+  }
+}
+bool simulator::get_16(){
+  for (int i = 0;i < 8; i++){
+    int a = 4 * i, b = a + 3;
+    get_group_winner(Vecteam, a, b);
+    team t = Vecteam[2 * i]; Vecteam[2 * i] = Vecteam[a]; Vecteam[a] = t;
+    t = Vecteam[2 * i + 1]; Vecteam[2 * i + 1] = Vecteam[b]; Vecteam[b] = t; 
+  }
+  return 1;
+}
+bool simulator::schedule8(){
+  matches[0].A = 0; matches[0].B = 3; matches[1].A = 4; matches[1].B = 7; 
+  matches[2].A = 1; matches[2].B = 2; matches[3].A = 5; matches[3].B = 6; 
+  matches[4].A = 8; matches[4].B = 11; matches[5].A = 12; matches[5].B = 15; 
+  matches[6].A = 9; matches[6].B = 10; matches[7].A = 13; matches[7].B = 14;
+  vector<int> a;
+  for (int i = 0; i < 12; i++) a.push_back(i);
+  random_arrange(a, 0, 11);
+  for (int i = 0; i < 8; i++) {
+    matches[i].day = 13 + i / 2;
+    matches[i].stdium = a[i];
+  }
+  ofstream fout("schedule8.txt");
+  showschedule(cout, 16);
+  showschedule(fout, 16);
+  fout.close();
+  return 1;
+}
+void simulator::showschedule(ostream & out, int n, int num, int finalround){ //num表示一天几场比赛
+  if (finalround) out << "Schedule for finals: " << endl;
+  else out << " Schedule for round of " << n << ":" << endl;
+  if(num == 2)
+    for (int i = 0; i < n / 4; i++){
+      out << matches[2 * i].day << endl;
+      out << "  " << Vecteam[matches[2 * i].A].getnation() << " vs " << Vecteam[matches[2 * i].B].getnation() << " at " << matches[2 * i].stdium << endl;
+      out << "  " << Vecteam[matches[2 * i + 1].A].getnation() << " vs " << Vecteam[matches[2 * i + 1].B].getnation() << " at " << matches[2 * i + 1].stdium << endl;
+    }
+  else if (num == 1){
+    out << matches[0].day << endl;
+    out << "  " << Vecteam[matches[0].A].getnation() << " vs " << Vecteam[matches[0].B].getnation() << " at " << matches[0].stdium << endl;
+    out << matches[1].day << (finalround? "(World Cup finals)" :"") << endl;
+    out << "  " << Vecteam[matches[1].A].getnation() << " vs " << Vecteam[matches[1].B].getnation() << " at " << matches[1].stdium << endl;
+  }
+  out << endl;
+}
+bool simulator::schedule4(){
+  matches[0].A = 0; matches[0].B = 1; matches[1].A = 4; matches[1].B = 5; 
+  matches[2].A = 2; matches[2].B = 3; matches[3].A = 6; matches[3].B = 7; 
+  vector<int> a;
+  for (int i = 0; i < 12; i++) a.push_back(i);
+  random_arrange(a, 0, 11);
+  for (int i = 0; i < 4; i++) {
+    matches[i].day = 18 + i / 2;
+    matches[i].stdium = a[i];
+  }
+  ofstream fout("schedule4.txt");
+  showschedule(cout, 8);
+  showschedule(fout, 8);
+  fout.close();
+  return 1;
+}
+bool simulator::schedule2(){
+  matches[0].A = 0; matches[0].B = 1; matches[1].A = 2; matches[1].B = 3;
+  vector<int> a;
+  for (int i = 0; i < 12; i++) a.push_back(i);
+  random_arrange(a, 0, 11);
+  for (int i = 0; i < 2; i++) {
+    matches[i].day = 21 + i;
+    matches[i].stdium = a[i];
+  }
+  ofstream fout("schedule2.txt");
+  showschedule(cout, 4, 1);
+  showschedule(fout, 4, 1);
+  fout.close();
+  return 1;
+}
+bool simulator::schedule1(){
+  matches[0].A = 2; matches[0].B = 3; matches[1].A = 0; matches[1].B = 1;
+  vector<int> a;
+  for (int i = 0; i < 12; i++) a.push_back(i);
+  random_arrange(a, 0, 11);
+  for (int i = 0; i < 2; i++) {
+    matches[i].day = 24 + i;
+    matches[i].stdium = a[i];
+  }
+  ofstream fout("schedule1.txt");
+  showschedule(cout, 4, 1, 1);
+  showschedule(fout, 4, 1, 1);
+  fout.close();
+  return 1;
+}
+void simulator::simulatefinals(){
+  int third = (Vecteam[matches[0].A].versus(Vecteam[matches[0].B], 1) == 1)? matches[0].A: matches[0].B;
+  cout << "***The third place is " << Vecteam[third].getnation() << "!!***" << endl << endl << endl;
+  team t = Vecteam[third]; Vecteam[third] = Vecteam[2]; Vecteam[2] = t;
+  int first = (Vecteam[matches[1].A].versus(Vecteam[matches[1].B], 1) == 1)? matches[1].A: matches[1].B;
+  cout << "***The champion is " << Vecteam[first].getnation() << "!!***" << endl << endl << endl;
+  t = Vecteam[first]; Vecteam[first] = Vecteam[0]; Vecteam[0] = t;
+}
+void simulator::resultfinals(){
+  ofstream fout("Result1.txt");
+  show_resultfinals(cout);
+  show_resultfinals(fout);
+  fout.close();
+  ofstream fout1("team1.txt");
+  fout1 << "champion" << endl << Vecteam[0].getnation() << endl;
+  fout1.close();
+}
+void simulator::show_resultfinals(ostream & out){
+  out << "Final result for finals(the sequence is the first place to the fourth place)" << endl;
+  out << setw(12) << left << "Team" << right << setw(3) << "W" << setw(3) << "D" << setw(3) << "L" << setw(3) << "GF";
+  out << setw(3) << "GA" << setw(3) << "GD" << setw(4) << "PTs" << endl;
+  for (int i = 0; i < 4; i++) Vecteam[i].show_grade(out);
+  out << endl;
+}
+void simulator::sortPts(int s, int n){
+  for (int i = s; i < n; i++)
+    for (int j = n; j > i; j--)
+      if (Vecteam[j].get_PTs() > (Vecteam[j - 1]).get_PTs()){
+        team temp = Vecteam[j];
+        Vecteam[j] = Vecteam[j - 1];
+        Vecteam[j - 1] = temp;
+      }
+}
+void simulator::get_final_ten(){
+  sortPts(4, 7);
+  sortPts(8, 15);
+  ofstream fout("finalStastics.txt");
+  show_final_ten(cout);
+  show_final_ten(fout);
+  fout.close();
+}
+void simulator::show_final_ten(ostream & out){
+  out << "    " << setw(12) << left << "Team" << right << setw(3) << "W" << setw(3) << "D" << setw(3) << "L" << setw(3) << "GF";
+  out << setw(3) << "GA" << setw(3) << "GD" << setw(4) << "PTs" << endl;
+  for (int i = 0; i < 9; i++){
+    out << left << i + 1 << setw(3) << '.';
+    Vecteam[i].show_grade(out); 
+  }
+  out << 10 << ". ";
+  Vecteam[9].show_grade(out);
+  out << endl;
+}
+bool comp(sportsman & A, sportsman & B){ return B.goal < A.goal; }
+void simulator::sort_goal(){
+  for (int i = 0; i < 32; i++){
+    vector<sportsman> V1 = Vecteam[i].get_members();
+    /*sort(V1.begin(), V1.end(), comp);
+    for (int j = 0; j < 11; j++) cout << V1[j].name << ' ' << V1[j].comefrom << ' ' << V1[j].goal << endl;
+    cout << endl;
+    merge(vecMan.begin(), vecMan.begin() + 11 * i, V1.begin(), V1.end(), vecMan.begin(), comp);
+    for (int j = 0; j < 11 + 11 * i; j++) cout << vecMan[j].name << ' ' << vecMan[j].comefrom << ' ' << vecMan[j].goal << endl;
+      cout << endl;*/
+    vecMan.insert(vecMan.end(), V1.begin(), V1.end());
+  }
+  sort(vecMan.begin(), vecMan.end(), comp);
+  //for (auto a : vecMan) cout << a.name << ' ' << a.comefrom << ' ' << a.goal << endl;
+  ofstream fout("finalStastics.txt", ios::app);
+  show_goal_rank(cout);
+  show_goal_rank(fout);
+
+}
+void simulator::show_goal_rank(ostream &out){
+  out << "Goalscorers" << endl << endl;
+  out << vecMan[0].name << ", ";
+  out << vecMan[0].goal << " goals" << endl;
+  if (vecMan[0].pos == GK) out << "GK, " << vecMan[0].comefrom << endl; 
+  if (vecMan[0].pos == DF) out << "DF, " << vecMan[0].comefrom << endl; 
+  if (vecMan[0].pos == MF) out << "MF, " << vecMan[0].comefrom << endl; 
+  if (vecMan[0].pos == FW) out << "FW, " << vecMan[0].comefrom << endl; 
+  for (int i = 1; i < 20; i++){
+    if (vecMan[i].goal != vecMan[i - 1].goal) out << vecMan[i].goal << " goals" << endl;
+    out << vecMan[i].name << ", ";
+    if (vecMan[i].pos == GK) out << "GK, " << vecMan[i].comefrom << endl; 
+    if (vecMan[i].pos == DF) out << "DF, " << vecMan[i].comefrom << endl; 
+    if (vecMan[i].pos == MF) out << "MF, " << vecMan[i].comefrom << endl; 
+    if (vecMan[i].pos == FW) out << "FW, " << vecMan[i].comefrom << endl; 
+  }
+}
