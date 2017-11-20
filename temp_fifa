@@ -205,7 +205,7 @@ int team::versus(team & B, int mode){ //mode = 0为小组赛制，mode = 1为淘
   }
   int a = 0, b = 0, c = 0, d = 0;
   cout << "Group stage: " << endl;
-  cout << nation << " vs " << B.nation << endl;
+  cout << nation << (nation == host_nation? "(host)":"") << " vs " << B.nation << (B.nation == host_nation? "(host)":"") << endl;
   showMembers(cout);
   B.showMembers(cout);
   cout << "Playing...." << endl;  
@@ -275,21 +275,21 @@ void team::showMembers(ostream & out){
 
 void simulator::aushow32(ostream & out){
   out << "AFC(5)" << endl;
-  for (auto a : conteam[0]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  for (auto a : conteam[0]) out << "  " << a.getnation() << a.getnation() == host_nation? "(host)":"") << " (" << a.get_rank() << ")\n";
   out << "CONCACAF(3)" << endl;
-  for (auto a : conteam[1]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  for (auto a : conteam[1]) out << "  " << a.getnation() << a.getnation() == host_nation? "(host)":"") << " (" << a.get_rank() << ")\n";
   out << "CONMEBOL(5)" << endl;
-  for (auto a : conteam[2]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  for (auto a : conteam[2]) out << "  " << a.getnation() << a.getnation() == host_nation? "(host)":"") << " (" << a.get_rank() << ")\n";
   out << "CAF(5)" << endl;
-  for (auto a : conteam[3]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  for (auto a : conteam[3]) out << "  " << a.getnation() << a.getnation() == host_nation? "(host)":"") << " (" << a.get_rank() << ")\n";
   out << "UEFA(14)" << endl;
-  for (auto a : conteam[4]) out << "  " << a.getnation() << " (" << a.get_rank() << ")\n";
+  for (auto a : conteam[4]) out << "  " << a.getnation() << a.getnation() == host_nation? "(host)":"") << " (" << a.get_rank() << ")\n";
   out << endl;
 }
 void simulator::aushow(ostream & out, int n){
   if (n == 2) { out << " Qualified for finals: " << endl; n = 4; }
   else out << " Qualified for round of " << n << ": " << endl;
-  for (int i = 0; i < n; i++) out << Vecteam[i].getnation() << endl;
+  for (int i = 0; i < n; i++) out << Vecteam[i].getnation() << (Vecteam[i].getnation() == host_nation? "(host)":"") << endl;
   out << endl;
 }
 bool simulator::show32(){
