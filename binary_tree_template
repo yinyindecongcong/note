@@ -1,6 +1,5 @@
 //ADT for basic binary tree
-#include <iostream>
-using namespace std;
+//二叉树基类，包含其基本操作
 template <class entry>
 struct binary_node{
   //constructor
@@ -17,7 +16,7 @@ template <class entry>
 class binary_tree{
 public:
   //constructor
-  binary_tree():root(0){}
+  binary_tree():root(0), num_node(0){}
   binary_tree(const binary_tree<entry> & original){
   	num_node = original.num_node;
   	au_copy(root, original.root);
@@ -38,7 +37,7 @@ public:
   int size()const{ return num_node; }
   bool empty()const{ return num_node == 0; }
   int height()const{ return au_height(root); }
-  void insert(const entry& key){ num_node++; au_insert(root, key); }
+  bool insert(const entry& key){ num_node++; au_insert(root, key); return 1; }
   void clear(){	num_node = 0;	au_clear(root); }
   //traverse
   void preorder(void (*visit)(entry&)){
@@ -50,7 +49,7 @@ public:
   void postorder(void (*visit)(entry&)){
   	postorder_recursive(root, visit);
   }
-private:
+protected:
   //auxiliary function
   void au_copy(binary_node<entry> *& obj, const binary_node<entry> * ori){
   	if (!ori) return;
@@ -92,7 +91,7 @@ private:
   	postorder_recursive(root->rchild, visit);
   	visit(root->data);
   }	
-private:
+protected:
   binary_node<entry> * root;
   int num_node;
 };
@@ -100,46 +99,25 @@ template <class entry>
 void visit(entry& key){
   	cout << key << endl;
 }
-int main(){
-	binary_tree<int> T1;
-	binary_tree<int> T3;
-	T1.insert(6);
-	T1.insert(2);
-	T1.insert(1);
-	T1.insert(3);
-	T1.insert(7);
-	T1.insert(9);
-	T1.insert(8);
-	T1.insert(10);
-	T1.inorder(visit);
-	binary_tree<int> T2(T1);
-	T1.clear();
-	T2.inorder(visit);
-	T3 = T2;
-	T2.clear();
-	T3.inorder(visit);
-	cout << T3.size() << ' ' << T3.height() << endl;
-}
-
 
 //ADT for BST
-//
+//二叉查找树作为二叉树的子类，新增或重写查找/插入/删除操作 override：签名与返回类型相同
 template <class entry>
 class Search_tree :public binary_tree<entry>{
 public:
 	bool insert(const entry& key){
-		num_node++;
-		return insert_bst(root, key);
+		this->num_node++;
+		return insert_bst(this->root, key);
 	}
 	bool search(entry& key){
-		binary_node<entry> * found = search_bst(root, key);
+		binary_node<entry> * found = search_bst(this->root, key);
 		if (!found) return 0;
 		key = found->data;
 		return 1;
 	}
 	bool remove(const entry& key){
-		if (remove_bst(root, key)) {
-			num_node--;
+		if (remove_bst(this->root, key)) {
+			this->num_node--;
 			return 1;
 		}
 		return 0;
@@ -150,6 +128,7 @@ private:
 		if (key == root->data) return 0;
   		if (key < root->data) return insert_bst(root->lchild, key);
   		else if (key > root->data) return insert_bst(root->rchild, key);
+  		return 1;
 	}
 	binary_node<entry> * search_bst(binary_node<entry> * root, const entry& key){
 		if (!root || root->data == key) return root;
