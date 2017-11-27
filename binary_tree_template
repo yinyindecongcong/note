@@ -253,13 +253,13 @@ template <class entry>
 class AVL_tree: public Search_tree<entry>{
 public:
 	bool insert(const entry& key){
-		bool taller = 1;
+		bool taller;
 		this->num_node++;
 		return avl_insert(this->root, key, taller);
 	}
 	bool remove(const entry& key);
 protected:
-	bool avl_insert(binary_node<entry> *& root, const entry& key, bool taller){
+	bool avl_insert(binary_node<entry> *& root, const entry& key, bool &taller){
 		bool result = 1;
 		if (!root){
 			root = new AVL_node<entry>(key);
