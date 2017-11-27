@@ -237,7 +237,7 @@ int main(){
 
 //AVL树
 //定义AVL_node
-enum balance_factor{left_higher, equal_height, right_higher};
+
 template <class entry>
 struct AVL_node: public binary_node<entry>{
 	//construction,调用父类对应构造函数 
@@ -326,7 +326,93 @@ protected:
 		root = newroot;
 	}
 	//调整函数
+	/*
+	右调整为例，则root右边高，判断root右孩子平衡情况 
+	1.右边高，左旋
+	2.等高，不可能
+	3.左边高，先右旋再左旋，平衡因子调整分情况 
+	*/
 	void right_balance(binary_node<entry> *& root){
-		
+		binary_node<entry> * right = root->rchild;
+		switch(right->get_balance()){
+			case right_higher:
+				right->set_balance(equal_height);
+				root->set_balance(equal_height);
+				left_rotate(root);
+			break;
+			case equal_height:
+				cout << 
+				cout << "impossible++++" << endl;
+			break;
+			case left_higher:
+				binary_node<entry> * sub = right->lchild;
+				//调整平衡因子,画图即可 
+				switch(sub->get_balance()){
+					case equal_height:
+						right->set_balance(equal_height);
+						root->set_balance(equal_height);
+					break;
+					case left_higher:
+						right->set_balance(right_higher);
+						root->set_balance(equal_height);
+					break;
+					case right_higher:
+						right->set_balance(equal_height);
+						root->set_balance(left_higher);
+					break;
+				}
+				sub->set_balance(equal_height);
+				right_rotate(right);
+				left_rotate(root); 
+			break;
+		} 
+	}
+	void left_balance(binary_node<entry> *& root){
+		binary_node<entry> * left = root->lchild;
+		switch(left->get_balance()){
+			case left_higher:
+				left->set_balance(equal_height);
+				root->set_balance(equal_height);
+				right_rotate(root);
+			break;
+			case equal_height:
+				cout << "impossible" << endl;
+			break;
+			case right_higher:
+				binary_node<entry> * sub = left->rchild;
+				//调整平衡因子,画图即可 
+				switch(sub->get_balance()){
+					case equal_height:
+						left->set_balance(equal_height);
+						root->set_balance(equal_height);
+					break;
+					case left_higher:
+						left->set_balance(equal_height);
+						root->set_balance(right_higher);
+					break;
+					case right_higher:
+						left->set_balance(left_higher);
+						root->set_balance(equal_height);
+					break;
+				}
+				sub->set_balance(equal_height);
+				left_rotate(left);
+				right_rotate(root); 
+			break;
+		} 
 	}
 }; 
+int main(){
+	AVL_tree<int> T;
+	T.insert(1);
+	T.insert(2);
+	T.insert(3);
+	T.insert(4);
+	T.insert(5);
+	T.insert(6);
+	T.insert(7);
+	T.insert(8);
+	T.insert(9);
+	T.inorder(visit);
+	cout << T.height() << endl;
+}
