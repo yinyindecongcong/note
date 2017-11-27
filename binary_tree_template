@@ -234,3 +234,99 @@ int main(){
 	T.build_tree(a);
 	T.inorder(visit);
 }
+
+//AVL树
+//定义AVL_node
+enum balance_factor{left_higher, equal_height, right_higher};
+template <class entry>
+struct AVL_node: public binary_node<entry>{
+	//construction,调用父类对应构造函数 
+	AVL_node():binary_node<entry>(), balance(equal_height){} 
+	AVL_node(const entry& key):binary_node<entry>(key), balance(equal_height){}
+	//add balance_factor and its operation
+	balance_factor balance;
+	balance_factor get_balance()const{ return balance; }
+	void set_balance(balance_factor b){ balance = b; }
+}; 
+//AVL树--高度平衡的二叉查找树，作为查找树的子类并重写insert和remove操作
+template <class entry>
+class AVL_tree: public Search_tree<entry>{
+public:
+	bool insert(const entry& key){
+		bool taller = 1;
+		this->num_node++;
+		return avl_insert(this->root, key, taller);
+	}
+	bool remove(const entry& key);
+protected:
+	bool avl_insert(binary_node<entry> *& root, const entry& key, bool taller){
+		bool result = 1;
+		if (!root){
+			root = new AVL_node<entry>(key);
+			taller = 1; 
+		}
+		else if (root->data == key) taller = result = 0;  
+		if (key < root->data){
+			result = avl_insert(root->lchild, key, taller); //插入左子树 
+			if (taller){									//若长高,需调整的位置只调整一次，不可用while 
+				switch(root->get_balance()){
+					case left_higher:						//左高左平衡，不长高 
+						left_balance(root);
+						taller = 0;
+					break;								
+					case equal_height:						//一样高变为左高，长高 
+						root->set_balance(left_higher); 
+					break;
+					case right_higher:
+						root->set_balance(equal_height);	//右高变为一样高，不长高
+						taller = 0; 
+					break;
+				}
+			}
+		}
+		else if (key > root->data){
+			result = avl_insert(root->rchild, key, taller); //插入左子树 
+			if (taller){									//若长高,需调整的位置只调整一次，不可用while 
+				switch(root->get_balance()){
+					case right_higher:						//左高左调整，不长高 
+						right_balance(root);
+						taller = 0;
+					break;								
+					case equal_height:						//一样高变为左高，长高 
+						root->set_balance(right_higher); 
+					break;
+					case left_higher:
+						root->set_balance(equal_height);	//右高变为一样高，不长高
+						taller = 0; 
+					break;
+				}
+			}
+		}
+		return result;
+	}
+	//调整函数的辅助函数--左旋右旋
+	void right_rotate(binary_node<entry> *& root){
+		if (!root || !root->lchild) {
+			cout << "error" << endl;
+			return;
+		} 
+		binary_node<entry> * newroot = root->lchild;
+		root->lchild = newroot->rchild;
+		newroot->rchild = root;
+		root = newroot;
+	} 
+	void left_rotate(binary_node<entry> *& root){
+		if (!root || !root->rchild) {
+			cout << "error" << endl;
+			return;
+		} 
+		binary_node<entry> * newroot = root->rchild;
+		root->rchild = newroot->lchild;
+		newroot->lchild = root;
+		root = newroot;
+	}
+	//调整函数
+	void right_balance(binary_node<entry> *& root){
+		
+	}
+}; 
