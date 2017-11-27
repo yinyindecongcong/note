@@ -163,10 +163,31 @@ private:
 
 //建造树--作为查找树的子类，对于已排序的key序列，若采用上述insert将得到高度不平衡树。
 //此时可采用建造树，得到相对平衡二叉树（若序列长度为2的幂减一，则为完全平衡二叉树）
+//uses:循环调用build_insert，最后调用connect_tree链接右边的悬挂点
 template <class entry>
 class buildable_tree: public Search_tree<entry>{
+public:
+	bool build_tree(vector<entry> sequence){
+		//pos:若sequence非递增，且得到树为从头起最长递增序列所建造的平衡树，返回值为0 
+		bool result = 1;
+		vector<binary_node<entry> *> last_node; //记录每一层最右的节点
+		last_node.push_back(0);
+		while(this->num_node < sequence.size()){
+			if (this->num_node > 0 && sequence[this->num_node] < sequence[this->num_node - 1]) {
+				result = 0;
+				break;
+			}
+			else {
+				build_insert(this->num_node + 1, sequence[this->num_node], last_node);
+				this->num_node++;
+			}
+		} 
+		this->root = last_node[last_node.size() - 1];
+		connect_tree(last_node);
+		return result;
+	}
 protected:
-	bool build_insert(int count, const entry& key, vector<binary_node<entry> *> last_node){ 
+	bool build_insert(int count, const entry& key, vector<binary_node<entry> *> &last_node){ 
 		//count为第几个元素，所在层数为1 + count的因数中2的最高次数
 		int level = 1;
 		while(count % 2 == 0){
@@ -180,7 +201,7 @@ protected:
 		else last_node[level] = new_node;
 		if (last_node.size() > level + 1 && last_node[level + 1]->rchild == NULL)  last_node[level + 1]->rchild = new_node;
 	}
-	bool connect_tree(vector<binary_node<entry> *> last_node){
+	bool connect_tree(vector<binary_node<entry> *> &last_node){
 		int high_level = last_node.size() - 1;
 		binary_node<entry> * high_node = NULL, * low_node = NULL; 
 		while(high_level > 2){ //0-2层无需调整 
@@ -195,23 +216,6 @@ protected:
 				high_level = low_level;
 			} 
 		}
-	}
-public:
-	bool build_tree(vector<entry> sequence){
-		//pos:若sequence非递增，且得到树为从头起最长递增序列所建造的平衡树，返回值为0 
-		bool result = 1;
-		vector<binary_node<entry> *> last_node; //记录每一层最右的节点
-		last_node.push_back(0);
-		while(this->num_node < sequence.size()){
-			if (this->num_node > 0 && sequence[this->num_node] < sequence[this->num_node - 1]) {
-				result = 0;
-				break;
-			}
-			else build_insert(++this->num_node, sequence[this->num_node], last_node);
-		} 
-		this->root = last_node[last_node.size() - 1];
-		connect_tree(last_node);
-		return result;
 	}
 }; 
 int main(){
