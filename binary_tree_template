@@ -1,3 +1,4 @@
+//二叉树的基本操作的实现，二叉查找树，建造树
 //ADT for basic binary tree
 //二叉树基类，包含其基本操作
 template <class entry>
