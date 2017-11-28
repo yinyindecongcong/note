@@ -1,6 +1,9 @@
 //二叉树的基本操作的实现，二叉查找树，建造树
 //ADT for basic binary tree
 //二叉树基类，包含其基本操作
+
+//带*为AVL树所需语句
+//*enum balance_factor{left_higher, equal_height, right_higher};
 template <class entry>
 struct binary_node{
   //constructor
@@ -11,6 +14,10 @@ struct binary_node{
   entry data;
   binary_node<entry> * lchild;
   binary_node<entry> * rchild;
+  //*virtual balance_factor get_balance()const{ return equal_height; }
+  //*virtual void set_balance(balance_factor b){}
+  //*virtual ~binary_node(){}
+	
 };
 
 template <class entry>
