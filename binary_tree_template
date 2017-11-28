@@ -17,7 +17,8 @@ struct binary_node{
   //*virtual balance_factor get_balance()const{ return equal_height; }
   //*virtual void set_balance(balance_factor b){}
   //*virtual ~binary_node(){}
-	
+  //AVL树中AVL节点为二叉树节点的子类，操作中传参类型为二叉节点（实际为AVL节点，使用虚函数实现多态，使编译通过）
+  //具体见http://blog.csdn.net/wanlijunjun/article/details/53606352
 };
 
 template <class entry>
