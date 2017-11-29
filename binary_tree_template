@@ -256,7 +256,9 @@ struct AVL_node: public binary_node<entry>{
 	balance_factor get_balance()const{ return balance; }
 	void set_balance(balance_factor b){ balance = b; }
 }; 
+
 //AVL树--高度平衡的二叉查找树，作为查找树的子类并重写insert和remove操作
+//参考《DATA STRUCTURES AND PROGRAM DESIGN IN C++》，chapter 10
 template <class entry>
 class AVL_tree: public Search_tree<entry>{
 public:
@@ -265,8 +267,79 @@ public:
 		this->num_node++;
 		return avl_insert(this->root, key, taller);
 	}
-	bool remove(const entry& key);
+	bool remove(entry key){
+		bool shorter;
+		this->num_node--;
+		return avl_remove(this->root, key, shorter);
+	}
 protected:
+	bool avl_remove(binary_node<entry> *& root, entry& key, bool & shorter){
+		if (!root) return 0;
+		else if (root->data == key){
+			binary_node<entry> * to_delete = root;
+			if (root->lchild && root->rchild){	//若有左右孩子，转化问题为只有左孩子的情况 
+				to_delete = root->lchild;
+				while(to_delete->rchild) to_delete = to_delete->rchild;
+				key = root->data = to_delete->data;
+				goto jmp; 
+			}
+			else if (!root->lchild) root = root->rchild;
+			else if (!root->rchild) root = root->lchild;
+			shorter = 1;
+			delete to_delete; 
+		}
+		else if (key < root->data){
+		jmp:
+			avl_remove(root->lchild, key, shorter);
+			if (shorter){
+				switch(root->get_balance()){
+					case equal_height:
+						root->set_balance(right_higher);
+						shorter = 0;
+					break;
+					case left_higher:
+						root->set_balance(equal_height);
+					break;
+					case right_higher:
+						//除了左孩子的平衡因子为equal_height的情况插入不可能出现，
+						//其余情况可看成（但不完全相同）往左子树插入了一个节点达到不平衡状态，但平衡因子的调整与左右旋是完全相同的 
+						//故只需在此处增加equal_height情况的处理即可（由于shorter变化不同，不可直接加在平衡函数中） 
+						if (root->rchild->get_balance() == equal_height){
+							root->rchild->set_balance(left_higher);
+							left_rotate(root);
+							shorter = 0;
+						}
+						else right_balance(root);
+					break;
+				}
+			}
+		}
+		else if (key > root->data){
+			avl_remove(root->rchild, key, shorter);
+			if (shorter){
+				switch(root->get_balance()){
+					case equal_height:
+						root->set_balance(left_higher);
+						shorter = 0;
+					break;
+					case right_higher:
+						root->set_balance(equal_height);
+					break;
+					case left_higher:
+						//除了左孩子的平衡因子为equal_height的情况插入不可能出现，
+						//其余情况可看成（但不完全相同）往左子树插入了一个节点达到不平衡状态，但平衡因子的调整与左右旋是完全相同的 
+						//故只需在此处增加equal_height情况的处理即可（由于shorter变化不同，不可直接加在平衡函数中） 
+						if (root->lchild->get_balance() == equal_height){
+							root->lchild->set_balance(right_higher);
+							right_rotate(root);
+							shorter = 0;
+						}
+						else left_balance(root);
+					break;
+				}
+			}
+		}
+	}
 	bool avl_insert(binary_node<entry> *& root, const entry& key, bool &taller){
 		bool result = 1;
 		if (!root){
@@ -349,8 +422,8 @@ protected:
 				left_rotate(root);
 			break;
 			case equal_height:
-				cout << 
-				cout << "impossible++++" << endl;
+				//只有删除节点时可能出现
+				cout << "only delete" << endl;	
 			break;
 			case left_higher:
 				binary_node<entry> * sub = right->lchild;
@@ -384,7 +457,8 @@ protected:
 				right_rotate(root);
 			break;
 			case equal_height:
-				cout << "impossible" << endl;
+				//只有删除节点时可能出现
+				cout << "only delete" << endl; 
 			break;
 			case right_higher:
 				binary_node<entry> * sub = left->rchild;
@@ -422,5 +496,9 @@ int main(){
 	T.insert(8);
 	T.insert(9);
 	T.inorder(visit);
+	cout << endl;
+	T.remove(4);
+	T.remove(1); 
+	T.preorder(visit);
 	cout << T.height() << endl;
 }
