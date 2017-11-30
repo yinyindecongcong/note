@@ -502,3 +502,21 @@ int main(){
 	T.preorder(visit);
 	cout << T.height() << endl;
 }
+
+//伸展树 splay tree，作为二叉查找树的子类，增加一个splay操作，将指定节点调整到根的位置
+/*
+若指定节点为父节点的左孩子，称为zig，右孩子称为zag
+自下而上：zig-zig ------right_rotate(large) + right_rotate(middle) ---升高二层
+				 zig-zag ------left_rotate(small) + right_rotate(root)    ---升高二层
+				 zig ----------right_rotate(large)                        ---升高一层
+				 zag等同上
+《DATA STRUCTURE AND PROGRAM DESIGN IN C++》里面采用下面更简单的方法
+自顶而下：有三棵树作为辅助，分别为
+					central_tree:包含目标节点（如果存在的话）
+					smaller_key_tree:包含key值严格小于目标节点key值的节点
+					larger_key_tree:包含key值严格大于目标节点key值的节点
+					zig-zig ------right_rotate(large) + link_right(middle) 
+				  zig-zag ------link_right(large) + link_left(small)   
+				  zig ----------link_right(large)                        
+				  zag等同上
+*/
