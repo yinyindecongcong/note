@@ -23,7 +23,7 @@ This results in the following ciphertext:
        EVLNA CDTES EAROF ODEEC WIREE 
 To decipher it, the recipient has to work out the column lengths by dividing the message length by the key length. Then he can write the message out in columns again, then re-order the columns by reforming the key word.
 
-c++代码实现如下：（只针对第一种，即有补全的加密，此处补全均为符号*）
+c++代码实现如下：（有补全的加密，此处补全均为符号*）
 #include <iostream>
 using namespace std;
 //确定读取列的顺序
@@ -41,9 +41,12 @@ string cipher(const string & s, const string & key){
     for (int i = 0; i < s.size(); i++)
         if ((s[i] >= 'a' && s[i] <= 'z') ||(s[i] >= 'A' && s[i] <= 'Z')) e += s[i];
     int k;
-    if (k = e.size() % key.size())
+    /*
+    保留为有补全的，否则为无补全的
+    if (k = e.size() % key.size())
         while(k++ < key.size())
             e += '*';
+    */
     int order[key.size()];
     init(order, key);
     for (int i = 0; i < key.size(); i++){
@@ -59,11 +62,14 @@ string decipher(const string & s, const string & key){
     int order[key.size()];
     init(order, key);
     string result = s;
-    int row = s.size() / key.size();
-    for (int i = 0; i < key.size(); i++){
+    //int row = s.size() / key.size();  //有补全  
+    int row = s.size() / key.size() + 1; //无补全
+    int count = 0; //标志读到第几位
+    for (int i = 0; i < key.size(); i++){
         int k = order[i];
         for (int j = 0; j < row; j++)
-            result[k + j * key.size()] = s[j + i * row];
+            if (k + j * key.size() < s.size()) //保留为无补全的，否则为有补全的
+               result[k + j * key.size()] = s[count++];
     }
     return result;
 }
