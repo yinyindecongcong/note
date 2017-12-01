@@ -1,9 +1,11 @@
 //二叉树的基本操作的实现，二叉查找树，建造树
 //ADT for basic binary tree
 //二叉树基类，包含其基本操作
-
+#include <iostream>
+#include <vector>
+using namespace std;
 //带*为AVL树所需语句
-//*enum balance_factor{left_higher, equal_height, right_higher};
+enum balance_factor{left_higher, equal_height, right_higher};
 template <class entry>
 struct binary_node{
   //constructor
@@ -196,7 +198,7 @@ public:
 		return result;
 	}
 protected:
-	bool build_insert(int count, const entry& key, vector<binary_node<entry> *> &last_node){ 
+	void build_insert(int count, const entry& key, vector<binary_node<entry> *> &last_node){ 
 		//count为第几个元素，所在层数为1 + count的因数中2的最高次数
 		int level = 1;
 		while(count % 2 == 0){
@@ -210,7 +212,7 @@ protected:
 		else last_node[level] = new_node;
 		if (last_node.size() > level + 1 && last_node[level + 1]->rchild == NULL)  last_node[level + 1]->rchild = new_node;
 	}
-	bool connect_tree(vector<binary_node<entry> *> &last_node){
+	void connect_tree(vector<binary_node<entry> *> &last_node){
 		int high_level = last_node.size() - 1;
 		binary_node<entry> * high_node = NULL, * low_node = NULL; 
 		while(high_level > 2){ //0-2层无需调整 
@@ -227,6 +229,7 @@ protected:
 		}
 	}
 }; 
+/*
 int main(){
 	buildable_tree<int> T;
 	vector<int> a;
@@ -242,6 +245,7 @@ int main(){
 	T.build_tree(a);
 	T.inorder(visit);
 }
+*/
 
 //AVL树
 //定义AVL_node
@@ -484,6 +488,7 @@ protected:
 		} 
 	}
 }; 
+/*
 int main(){
 	AVL_tree<int> T;
 	T.insert(1);
@@ -501,7 +506,7 @@ int main(){
 	T.remove(1); 
 	T.preorder(visit);
 	cout << T.height() << endl;
-}
+}*/
 
 //伸展树 splay tree，作为二叉查找树的子类，增加一个splay操作，将指定节点调整到根的位置
 /*
@@ -513,10 +518,121 @@ int main(){
 《DATA STRUCTURE AND PROGRAM DESIGN IN C++》里面采用下面更简单的方法
 自顶而下：有三棵树作为辅助，分别为
 					central_tree:包含目标节点（如果存在的话）
-					smaller_key_tree:包含key值严格小于目标节点key值的节点
-					larger_key_tree:包含key值严格大于目标节点key值的节点
+					smaller_key_tree:包含key值严格小于central_tree所有节点key值的节点
+					larger_key_tree:包含key值严格大于central_tree所有节点key值的节点
 					zig-zig ------right_rotate(large) + link_right(middle) 
-				  zig-zag ------link_right(large) + link_left(small)   
-				  zig ----------link_right(large)                        
-				  zag等同上
+				    zig-zag ------link_right(large) + link_left(small)   
+				    zig ----------link_right(large)                        
+				    zag等同上
 */
+template <class entry>		
+class splay_tree: public Search_tree<entry>{
+public:
+	bool splay(const entry &key){//若key不存在，插入并调整，返回0，否则调整key，返回1
+		if (adj_splay(this->root, key) == 0) { this->num_node++; return 0;}
+		return 1;
+
+	}
+protected:
+	//若key不存在，插入并调整，返回0，否则调整key，返回1
+	//smaller_key_tree和larger_key_tree初始化为辅助节点dummy,child为对应中间节点
+	bool adj_splay(binary_node<entry> *& root, const entry & key){
+		bool result = 0; 
+		binary_node<entry> * dummy = new binary_node<entry>;
+		binary_node<entry> * first_large = dummy, * first_small = dummy, * child = NULL;
+		while(root && root->data != key){
+			if (key < root->data){
+				child = root->lchild;
+				if (!child || child->data == key) //zig-move
+					link_right(root, first_large);
+				else if (key < child->data){      //zig-zig-move
+					right_rotate(root);//root已改变
+					link_right(root, first_large);
+				}
+				else {                            //zig-zag-move
+					link_right(root, first_large);//root已改变
+					link_left(root, first_small);
+				}
+			}
+			else if (key > root->data){
+				child = root->rchild;
+				if (!child || child->data == key) //zag-move
+					link_left(root, first_small);
+				else if (key > child->data){      //zag-zag-move
+					left_rotate(root);//root已改变
+					link_left(root, first_small);
+				}
+				else {                            //zag-zig-move
+					link_left(root, first_small);//root已改变
+					link_right(root, first_large);
+				}
+			}
+		}
+		//此时root为空（表示未找到key）或root不为空，即为key
+		if (!root){
+			root = new binary_node<entry>(key);
+			//first_large和first_small调整
+			first_large->lchild = first_small->rchild = NULL;
+		}
+		else {
+			//first_large和first_small调整
+			first_large->lchild = root->rchild;
+			first_small->rchild = root->lchild;
+			result = 1;
+		}
+		root->lchild = dummy->rchild;
+		root->rchild = dummy->lchild;
+		delete dummy;
+		return result;
+	}
+	//link_right和link_left辅助函数
+	//first_large为large_key_tree最小的元素，first_small为smaller_key_tree最大的元素
+	void link_right(binary_node<entry> *& root, binary_node<entry> *& first_large){
+		first_large->lchild = root;
+		first_large = root;
+		root = root->lchild;
+	}
+	void link_left(binary_node<entry> *& root, binary_node<entry> *& first_small){
+		first_small->rchild = root;
+		first_small = root;
+		root = root->rchild;
+	}
+	//左旋右旋
+	void right_rotate(binary_node<entry> *& root){
+		if (!root || !root->lchild) {
+			cout << "error" << endl;
+			return;
+		} 
+		binary_node<entry> * newroot = root->lchild;
+		root->lchild = newroot->rchild;
+		newroot->rchild = root;
+		root = newroot;
+	} 
+	void left_rotate(binary_node<entry> *& root){
+		if (!root || !root->rchild) {
+			cout << "error" << endl;
+			return;
+		} 
+		binary_node<entry> * newroot = root->rchild;
+		root->rchild = newroot->lchild;
+		newroot->lchild = root;
+		root = newroot;
+	}
+};
+
+int main(){
+	splay_tree<int> T;
+	T.splay(1);
+	T.splay(2);
+	T.splay(3);
+	T.splay(4);
+	T.splay(5);
+	T.splay(6);
+	T.splay(7);
+	T.splay(8);
+	T.splay(9);
+	T.inorder(visit);
+	T.splay(6);
+	T.preorder(visit);
+	cout << T.height() << endl;
+}
