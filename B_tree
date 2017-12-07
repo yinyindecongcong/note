@@ -2,7 +2,7 @@
 using namespace std;
 //n阶B树
 /*
-1. 除了根以外的内点最多有n个孩子，最少有n/2个孩子，数据数 = 孩子数 - 1
+1. 除了根以外的内点最多有n个孩子，最少有（n + 1）/2个孩子，元素数 = 孩子数 - 1
 2. 所有叶子都在同一层->通过只增加根节点来维护
 3. 根最多有n个孩子，若非叶节点至少有2个孩子 
 */ 
@@ -55,6 +55,10 @@ public:
 	void print2(){
 		for (int i = 0; i < root->count; i++) cout << root->data[i] << ' ';
 		if (root) cout << endl << root->count << endl;
+		for (int i = 0; i < root->branch[0]->count; i++) cout << root->branch[0]->data[i] << ' ';
+		cout << endl << root->branch[0]->count << endl;
+		for (int i = 0; i < root->branch[1]->count; i++) cout << root->branch[1]->data[i] << ' ';
+		cout << endl << root->branch[1]->count << endl;
 	}
 private:
 	//auxiliary function
@@ -177,14 +181,14 @@ private:
 				 recursive_remove(Node->branch[position], Node->data[position]);
 			}
 			else { //为叶节点，直接删除，没有孩子，不用调整分支 
-				for(int i = position; i < Node->count; i++)
+				for(int i = position; i < Node->count - 1; i++)
 					Node->data[i] = Node->data[i + 1];
 				Node->count--;
 			}
 		}
 		else result = recursive_remove(Node->branch[position], target);
 		//此时position为删除节点所在分支下标或root为叶节点的时候显然成立 
-		if (Node->branch[position] != NULL && Node->branch[position]->count + 1 < order / 2) 
+		if (Node->branch[position] != NULL && Node->branch[position]->count < (order - 1) / 2) 
 			restore(Node, position); //若孩子数过少，修复 
 		return result;
 	}
@@ -195,10 +199,10 @@ private:
 			if (Node->branch[position - 1]->count >= order / 2) move_right(Node, position - 1); 
 			else combine(Node, position);
 		else if (position == 0)
-			if (Node->branch[1]->count >= order / 2) move_left(Node, 1);
+			if (Node->branch[1]->count > (order - 1) / 2) move_left(Node, 1);
 			else combine(Node, 1); 
-		else if (Node->branch[position - 1]->count >= order / 2) move_right(Node, position - 1);
-		else if (Node->branch[position + 1]->count  >= order / 2) move_left(Node, position + 1);
+		else if (Node->branch[position - 1]->count > (order - 1) / 2) move_right(Node, position - 1);
+		else if (Node->branch[position + 1]->count  > (order - 1) / 2) move_left(Node, position + 1);
 		else combine(Node, position);
 	} 
 	void move_right(B_node<entry, order> *& Node, int position){//Node->branch[position + 1]元素过少 
@@ -303,7 +307,7 @@ void remove_series(B_tree<entry, order> & T){
 			cin >> c;
 			T.remove_tree(c);
 		}
-		T.print2();
+		T.print();
 		cout << T.height() << endl;
 	}
 }
