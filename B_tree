@@ -28,6 +28,20 @@ template <class entry, int order>
 class B_tree{
 public:
 	B_tree():root(NULL){}
+	~B_tree(){
+		clear();
+	}
+	void clear(){
+		re_clear(root);
+	}
+	void re_clear(B_node<entry, order> *& root){
+		if (root == NULL) return;
+		for (int i = 0; i < root->count + 1; i++)
+			re_clear(root->branch[i]);
+		delete root;
+		cout << 1 << endl;
+		root = NULL;
+	}
 	//add other constructors
 	error_code search_tree(const entry& target){
 		return iteration_search(root, target);
@@ -314,6 +328,8 @@ void remove_series(B_tree<entry, order> & T){
 int main(){
 	B_tree<char, 5> T;
 	insert_series(T);
-	search_series(T);
-	remove_series(T);
+//	search_series(T);
+//	remove_series(T);
+	T.clear();
+	T.print();
 }
