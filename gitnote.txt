@@ -1,0 +1,25 @@
+git remote add origin + ssh
+
+git pull origin master
+
+git push -u origin master
+
+git push
+
+创建新分支：git branch branchName
+
+切换到新分支：git checkout branchName
+
+在master分支上的时候，HEAD指向的是master，对应的是c2的commit ID。
+
+而切换到a分支的时候，HEAD也相应的指向了a，
+
+同时a对应的是a分支上的最新commit ID。
+
+因此，我们可以得出结论，在切换分支的时候，HEAD也会相应的指向对应的分支引用。
+
+git diff 比较暂存区与工作区
+
+git checkout -- <file> 使用暂存区的file覆盖工作区file
+
+git checkout branch/commit_hash -- <file> 从branch或hash对应的版本覆盖暂存区和工作去指定文件
