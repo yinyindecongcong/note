@@ -30,6 +30,7 @@ http://bbs.fishc.com/thread-49126-1-1.html
 def f1( ... )
     n = 0
     def f2( ... )
+        nonlocal n #python对外部变量只能访问而不能修改，加上nonlocal关键字就可以了
         n = n + 1
         return n
     return f2
